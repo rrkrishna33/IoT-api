@@ -1,0 +1,11 @@
+# Append to /etc/caddy/Caddyfile. A named site takes precedence over the
+# catch-all `https://` on-demand block, so this does not affect the other sites.
+api.gellsoft.com {
+	reverse_proxy 127.0.0.1:4000
+	encode zstd gzip
+	header {
+		Strict-Transport-Security "max-age=31536000"
+		X-Content-Type-Options "nosniff"
+		-Server
+	}
+}

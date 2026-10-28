@@ -1,0 +1,18 @@
+[Unit]
+Description=IoT API
+After=network.target postgresql.service
+
+[Service]
+Type=simple
+User=iotapi
+WorkingDirectory=/opt/iot-api
+ExecStart=/usr/bin/node --env-file=/opt/iot-api/.env src/server.js
+Restart=always
+RestartSec=3
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target
