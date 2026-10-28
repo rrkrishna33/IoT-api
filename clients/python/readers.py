@@ -4,6 +4,7 @@
   {"type": "file", "path": "C:\\\\logs\\\\counter.txt"}     # last line of a file holds the number
   {"type": "command", "command": "mytool.exe --pages"}    # command prints the number
   {"type": "http", "url": "http://192.168.1.21/pages", "json_path": "counters.total"}
+  {"type": "modbus", "port": "COM3", "slave": 1, "register": 0, "format": "uint32"}  # RS485 Modbus RTU
 
 Add a new type by adding a function to READERS. Readers return a number or raise.
 """
@@ -46,7 +47,39 @@ def _http(spec):
     return _number(data)
 
 
-READERS = {"simulated": _simulated, "file": _file, "command": _command, "http": _http}
+_MODBUS_WORD_ORDER = {"big": 0, "little": 1, "big_swap": 2, "little_swap": 3}  # minimalmodbus BYTEORDER_*
+
+
+def _modbus(spec):
+    """Modbus RTU over RS485 (pip install minimalmodbus). Machines on one bus share the port, each with its own slave id."""
+    import minimalmodbus
+
+    inst = spec.get("_instrument")
+    if inst is None:
+        inst = minimalmodbus.Instrument(spec["port"], int(spec.get("slave", 1)))
+        inst.serial.baudrate = int(spec.get("baudrate", 9600))
+        inst.serial.parity = spec.get("parity", "N")
+        inst.serial.stopbits = int(spec.get("stopbits", 1))
+        inst.serial.bytesize = 8
+        inst.serial.timeout = float(spec.get("timeout", 1))
+        inst.close_port_after_each_call = True
+        spec["_instrument"] = inst
+    reg = int(spec["register"])  # 0-based protocol address: holding register 40001 is 0
+    fc = int(spec.get("function", 3))  # 3 = holding registers, 4 = input registers
+    fmt = spec.get("format", "uint16")
+    order = _MODBUS_WORD_ORDER[spec.get("word_order", "big")]
+    if fmt in ("uint16", "int16"):
+        value = inst.read_register(reg, functioncode=fc, signed=fmt == "int16")
+    elif fmt in ("uint32", "int32"):
+        value = inst.read_long(reg, functioncode=fc, signed=fmt == "int32", byteorder=order)
+    elif fmt == "float32":
+        value = inst.read_float(reg, functioncode=fc, byteorder=order)
+    else:
+        raise ValueError(f"unknown modbus format: {fmt}")
+    return value * spec.get("scale", 1)
+
+
+READERS = {"simulated": _simulated, "file": _file, "command": _command, "http": _http, "modbus": _modbus}
 
 
 def read_value(spec):
