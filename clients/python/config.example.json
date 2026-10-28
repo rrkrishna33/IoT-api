@@ -1,0 +1,20 @@
+{
+  "api_url": "https://api.gellsoft.com",
+  "interval_seconds": 30,
+  "queue_dir": "C:\\IoTAgent\\queues",
+  "log_path": "C:\\IoTAgent\\agent.log",
+  "printers": [
+    {
+      "name": "Printer 1",
+      "device_key": "iot_PASTE_PRINTER_1_KEY",
+      "metric": "copies_printed",
+      "reader": { "type": "file", "path": "C:\\printers\\p1_counter.txt" }
+    },
+    {
+      "name": "Printer 2",
+      "device_key": "iot_PASTE_PRINTER_2_KEY",
+      "metric": "copies_printed",
+      "reader": { "type": "http", "url": "http://192.168.1.22/counter", "json_path": "pages.total" }
+    }
+  ]
+}
