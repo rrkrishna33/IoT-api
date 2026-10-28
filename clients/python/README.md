@@ -68,12 +68,25 @@ Provisioning writes every printer with a placeholder `simulated` reader that sen
 | `file` | `path` | The number on the **last non-empty line** of a text file (`1,234` is read as 1234) |
 | `command` | `command`, `timeout` (10s) | Runs the command and parses the first number it prints |
 | `http` | `url`, `json_path` (optional, like `pages.total`), `timeout` | A number from the response body, or from a JSON field |
+| `modbus` | `port`, `slave` (1), `register`, `function` (3), `format` (`uint16`), `word_order` (`big`), `baudrate` (9600), `parity` (`N`), `stopbits` (1), `timeout` (1s), `scale` (1) | A register from a machine/PLC over RS485 (Modbus RTU) |
 
 ```json
 { "type": "file",    "path": "C:\\printers\\epson_counter.txt" }
 { "type": "command", "command": "C:\\tools\\getpages.exe 192.168.1.21" }
 { "type": "http",    "url": "http://192.168.1.22/counter", "json_path": "pages.total" }
+{ "type": "modbus",  "port": "COM3", "slave": 1, "register": 0, "format": "uint32" }
 ```
+
+Modbus (RS485): take these from the machine/PLC manual.
+
+- `port`: the USB-RS485 adapter's COM port (Device Manager > Ports).
+- `slave`: the machine's Modbus address. Several machines can share one RS485 bus and `port`, each with its own `slave`.
+- `register`: the 0-based address. A manual that lists holding register `40001` means `0`, and `40011` means `10`.
+- `function`: `3` for holding registers (4xxxx), `4` for input registers (3xxxx).
+- `format`: `uint16`, `int16`, `uint32`, `int32` or `float32`. Counters above 65535 use two registers (`uint32`).
+- `word_order`: for 32-bit values, `big` (high word first, the default) or `little`. Try `little` if the number looks wrong. `big_swap` and `little_swap` also swap bytes.
+- `baudrate`, `parity` (`N`, `E` or `O`), `stopbits`: must match the machine.
+- `scale`: multiplies the raw value, e.g. `0.1` when the manual says the value is in tenths.
 
 Add a new type by adding a function to `READERS` in `readers.py`. Network printers usually expose the page count over SNMP; there is no SNMP reader yet.
 

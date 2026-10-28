@@ -6,7 +6,7 @@ agent.py, readers.py, iot_client.py and this script, in an elevated PowerShell:
   powershell -ExecutionPolicy Bypass -File .\install.ps1 -ConfigPath C:\path\to\config-acme.json
 
 What it does: copies the agent to C:\IoTAgent, creates a private Python venv with
-`requests`, installs the config (readable only by SYSTEM and Administrators), sends
+`requests` and `minimalmodbus`, installs the config (readable only by SYSTEM and Administrators), sends
 one test cycle, then registers a Scheduled Task that starts at boot, restarts on
 failure, and runs without anyone logged in. Safe to re-run with -Force.
 #>
@@ -62,8 +62,8 @@ Step "Creating private Python environment"
 $venv = Join-Path $InstallDir "venv"
 if (-not (Test-Path (Join-Path $venv "Scripts\python.exe"))) { & $py -m venv $venv; if ($LASTEXITCODE) { throw "venv creation failed" } }
 $vpy = Join-Path $venv "Scripts\python.exe"
-& $vpy -m pip install --quiet --disable-pip-version-check requests
-if ($LASTEXITCODE) { throw "pip install requests failed (is the PC online?)" }
+& $vpy -m pip install --quiet --disable-pip-version-check requests minimalmodbus
+if ($LASTEXITCODE) { throw "pip install requests minimalmodbus failed (is the PC online?)" }
 
 Step "Test run (reads every printer and sends one reading each)"
 & $vpy (Join-Path $InstallDir "agent.py") $dest --once
